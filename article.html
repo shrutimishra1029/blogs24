@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blogs24 - Blog</title>
+    <script src="theme-init.js"></script>
+    <script src="app-popup.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="article-page">
+
+    
+
+    <!-- Hamburger Menu Button -->
+    <button class="hamburger">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay"></div>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h2>Menu</h2>
+        <button class="close-sidebar">&times;</button>
+      </div>
+      
+      <!-- User Login Section -->
+      <div class="sidebar-user" id="sidebar-user">
+        <div id="user-logged-out">
+          <button onclick="googleSignIn()" class="btn-login">
+            🔐 Sign in with Google
+          </button>
+        </div>
+        <div id="user-logged-in" style="display: none;">
+          <img id="user-photo" src="" alt="Profile" class="user-avatar">
+          <p id="user-name"></p>
+          <button onclick="signOut()" class="btn-logout">Sign Out</button>
+        </div>
+      </div>
+      
+      <ul class="sidebar-menu">
+        <li><a href="index.html">🏠 Home</a></li>
+        <li><a href="profile.html">Profile</a></li>
+        <li><a href="bookmarked.html">Saved Blogs</a></li>
+        <li><a href="liked.html">Liked Blogs</a></li>
+        <li><a href="subscription.html">Subscription</a></li>
+        <li><a href="contact.html">Feedback/Contact Us</a></li>
+        <li><a href="settings.html">Settings</a></li>
+        
+        <!-- Admin/Superadmin Only Options -->
+        <li class="admin-only" style="display: none;"><a href="create-news.html">📝 Create Blog</a></li>
+        <li class="admin-only" style="display: none;"><a href="manage-users.html">👥 Manage Users</a></li>
+        <li class="admin-only" style="display: none;"><a href="analytics.html">📊 Blog Analytics</a></li>
+      </ul>
+    </div>
+
+    <!-- Header Top -->
+    <div class="header-top">
+        <div class="container">
+            <div class="date"></div>
+        </div>
+    </div>
+
+    <!-- Logo Section -->
+    <div class="logo-section">
+        <a href="index.html">
+            <h1 class="site-brand">
+                <svg class="brand-mark" viewBox="0 0 40 40" aria-hidden="true">
+                    <path d="M33 5C20 6 9 11 7 20c-1 6 3 10 9 9 9-1 14-12 17-24Z"></path>
+                    <path d="M5 35c8-9 15-15 25-24M14 27l-1-8m8 1 6-1"></path>
+                </svg>
+                <span>Blogs24</span>
+            </h1>
+        </a>
+    </div>
+
+    <!-- Blog Content -->
+    <main class="article-page-container">
+        <a href="index.html" class="article-back-link" title="Back to blogs" aria-label="Back to blogs"><span aria-hidden="true">←</span></a>
+        <article class="article-full">
+            <!-- Loading State -->
+            <div id="article-loading" class="loading-spinner">
+                <div class="spinner"></div>
+                <p>Loading blog...</p>
+            </div>
+
+            <!-- Article Content (will be loaded dynamically) -->
+            <div id="article-content" style="display: none;">
+                <header class="post-heading">
+                    <div class="article-category-badge" id="article-category-badge"></div>
+                    <h1 class="article-title" id="article-title"></h1>
+                    <div class="article-meta-full">
+                        <span class="article-author" id="article-author"></span>
+                        <span class="article-date" id="article-date"></span>
+                        <span class="article-read-time">5 min read</span>
+                    </div>
+                </header>
+
+                <div class="post-reading-layout">
+                    <img id="article-image" class="article-image-full" src="" alt="">
+                    <div class="article-body" id="article-body"></div>
+
+                    <div class="article-actions-full">
+                        <button class="action-btn-full" id="like-btn" type="button" onclick="toggleLikeArticle()">
+                            <span id="like-icon">❤️</span>
+                            <span id="like-text">Like</span>
+                            (<span id="like-count">0</span>)
+                        </button>
+                        <button class="action-btn-full" id="bookmark-btn" type="button" onclick="toggleBookmarkArticle()">
+                            <span id="bookmark-icon">🔖</span>
+                            <span id="bookmark-text">Bookmark</span>
+                        </button>
+                        <button class="action-btn-full" type="button" onclick="shareArticle()">📤 Share</button>
+                    </div>
+                </div>
+
+                <!-- Comments Section -->
+                <div class="comments-section-full">
+                    <h3>💬 Comments (<span id="comments-count">0</span>)</h3>
+                    
+                    <div class="comment-form-full">
+                        <textarea id="comment-input" class="comment-input-full" placeholder="Write a comment..." aria-label="Write a comment"></textarea>
+                        <button class="btn btn-primary" type="button" onclick="postComment()">Post Comment</button>
+                    </div>
+
+                    <div id="comments-list" class="comments-list-full"></div>
+                </div>
+            </div>
+
+            <!-- Error State -->
+            <div id="article-error" style="display: none;">
+                <p style="text-align: center; color: #c41e3a; padding: 50px;">Blog not found</p>
+            </div>
+        </article>
+    </main>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+    <!-- Firebase Authentication -->
+    <script src="firebase-auth.js"></script>
+
+    <!-- Shared Sidebar Script -->
+    <script src="sidebar.js"></script>
+
+    <!-- Article Script -->
+    <script src="article.js"></script>
+
+</body>
+</html>

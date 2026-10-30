@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blogs24 - Saved Blogs</title>
+    <script src="theme-init.js"></script>
+    <script src="app-popup.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="saved-blogs-page">
+  
+
+    <!-- Hamburger Menu Button -->
+    <button class="hamburger">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay"></div>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h2>Menu</h2>
+        <button class="close-sidebar">&times;</button>
+      </div>
+      
+      <!-- User Login Section -->
+      <div class="sidebar-user" id="sidebar-user">
+        <div id="user-logged-out">
+          <button onclick="googleSignIn()" class="btn-login">
+            🔐 Sign in with Google
+          </button>
+        </div>
+        <div id="user-logged-in" style="display: none;">
+          <img id="user-photo" src="" alt="Profile" class="user-avatar">
+          <p id="user-name"></p>
+          <button onclick="signOut()" class="btn-logout">Sign Out</button>
+        </div>
+      </div>
+      
+      <ul class="sidebar-menu">
+        <li><a href="index.html">🏠 Home</a></li>
+        <li><a href="profile.html">Profile</a></li>
+        <li><a href="bookmarked.html">Saved Blogs</a></li>
+        <li><a href="liked.html">Liked Blogs</a></li>
+        <li><a href="subscription.html">Subscription</a></li>
+        <li><a href="contact.html">Feedback/Contact Us</a></li>
+        <li><a href="settings.html">Settings</a></li>
+        
+        <!-- Admin/Superadmin Only Options -->
+        <li class="admin-only" style="display: none;"><a href="create-news.html">📝 Create Blog</a></li>
+        <li class="admin-only" style="display: none;"><a href="manage-users.html">👥 Manage Users</a></li>
+        <li class="admin-only" style="display: none;"><a href="analytics.html">📊 Blog Analytics</a></li>
+      </ul>
+    </div>
+
+    <!-- Header Top -->
+    <div class="header-top">
+        <div class="container">
+            <div class="date"></div>
+        </div>
+    </div>
+
+    
+    
+
+    <!-- Back to Home Button -->
+<a href="index.html" class="btn-back-arrow" title="Back to Home" aria-label="Back to Home"><span aria-hidden="true">←</span></a>
+
+
+
+    <!-- Main Content Area -->
+<div class="container">
+    <div class="category-header">
+        <h1>Saved Blogs</h1>
+        <p>Your saved blogs</p>
+    </div>
+    <div class="content-section">
+        <div id="bookmarked-container">
+            <div class="loading-spinner">
+                <div class="spinner"></div>
+                <p>Loading saved blogs...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+    <!-- Firebase Authentication -->
+    <script src="firebase-auth.js"></script>
+
+    <!-- Page-specific Script -->
+    <script src="bookmarked.js"></script>
+
+</body>
+</html>

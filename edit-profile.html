@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blogs24 - Edit Profile</title>
+    <script src="theme-init.js"></script>
+    <script src="app-popup.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="edit-profile-page">
+    <button class="hamburger" aria-label="Open menu">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+    <div class="sidebar-overlay"></div>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2>Menu</h2>
+            <button class="close-sidebar" aria-label="Close menu">&times;</button>
+        </div>
+        <div class="sidebar-user" id="sidebar-user">
+            <div id="user-logged-out">
+                <button onclick="googleSignIn()" class="btn-login">🔐 Sign in with Google</button>
+            </div>
+            <div id="user-logged-in" style="display: none;">
+                <img id="user-photo" src="" alt="Profile" class="user-avatar">
+                <p id="user-name"></p>
+                <button onclick="signOut()" class="btn-logout">Sign Out</button>
+            </div>
+        </div>
+        <ul class="sidebar-menu">
+            <li><a href="index.html">🏠 Home</a></li>
+            <li><a href="profile.html">Profile</a></li>
+            <li><a href="bookmarked.html">Saved Blogs</a></li>
+            <li><a href="liked.html">Liked Blogs</a></li>
+            <li><a href="subscription.html">Subscription</a></li>
+            <li><a href="contact.html">Feedback/Contact Us</a></li>
+            <li><a href="settings.html">Settings</a></li>
+            <li class="admin-only" style="display: none;"><a href="create-news.html">📝 Create Blog</a></li>
+            <li class="admin-only" style="display: none;"><a href="manage-users.html">👥 Manage Users</a></li>
+            <li class="admin-only" style="display: none;"><a href="analytics.html">📊 Blog Analytics</a></li>
+        </ul>
+    </div>
+
+    <div class="header-top">
+        <div class="container">
+            <div class="date"></div>
+        </div>
+    </div>
+
+    <a href="profile.html" class="btn-back-arrow" title="Back to Profile" aria-label="Back to Profile"><span aria-hidden="true">←</span></a>
+
+    <main class="edit-profile-container">
+        <section class="edit-profile-card">
+            <header class="edit-profile-header">
+                <span class="edit-profile-eyebrow">YOUR ACCOUNT</span>
+                <h1>Edit profile</h1>
+                <p>Update how your profile appears on Blogs24.</p>
+            </header>
+
+            <form id="edit-profile-form" class="edit-profile-form">
+                <div class="edit-profile-avatar-row">
+                    <img id="edit-profile-avatar" class="edit-profile-avatar" src="https://via.placeholder.com/120/cccccc/666666?text=User" alt="Profile photo preview">
+                    <div>
+                        <strong>Profile photo</strong>
+                        <p>Paste a public image URL to update your photo.</p>
+                    </div>
+                </div>
+
+                <div class="edit-profile-field">
+                    <label for="profile-name">Display name</label>
+                    <input id="profile-name" name="name" type="text" maxlength="80" autocomplete="name" required>
+                    <small>This name appears on your profile and comments.</small>
+                </div>
+
+                <div class="edit-profile-field">
+                    <label for="profile-photo">Profile photo URL <span>(optional)</span></label>
+                    <input id="profile-photo" name="photo" type="url" inputmode="url" placeholder="https://example.com/photo.jpg" autocomplete="url">
+                    <small>Leave blank to keep your current photo.</small>
+                </div>
+
+                <div class="edit-profile-form-actions">
+                    <a class="edit-profile-cancel" href="profile.html">Cancel</a>
+                    <button class="edit-profile-save" id="save-profile-btn" type="submit">Save changes</button>
+                </div>
+            </form>
+        </section>
+    </main>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="firebase-auth.js"></script>
+    <script src="sidebar.js"></script>
+    <script src="edit-profile.js"></script>
+</body>
+</html>

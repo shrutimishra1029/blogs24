@@ -1,0 +1,303 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null && request.auth.token.email is string;
+    }
+
+    function isSelf(userId) {
+      return signedIn() && request.auth.token.email == userId;
+    }
+
+    function userPath(email) {
+      return /databases/$(database)/documents/users/$(email);
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && exists(userPath(request.auth.token.email))
+        && get(userPath(request.auth.token.email)).data.role in ['admin', 'superadmin'];
+    }
+
+    function isSuperAdmin() {
+      return signedIn()
+        && exists(userPath(request.auth.token.email))
+        && get(userPath(request.auth.token.email)).data.role == 'superadmin';
+    }
+
+    function validNews(data) {
+      return data.keys().hasAll([
+          'title', 'category', 'description', 'imageUrl', 'author',
+          'authorEmail', 'createdAt', 'likes', 'bookmarks', 'comments'
+        ])
+        && data.keys().hasOnly([
+          'title', 'category', 'description', 'imageUrl', 'author',
+          'authorEmail', 'createdAt', 'likes', 'bookmarks', 'comments',
+          'status', 'updatedAt', 'updatedBy'
+        ])
+        && data.title is string
+        && data.title.size() > 0
+        && data.title.size() <= 200
+        && data.category in [
+          'latest', 'entertainment', 'sports', 'politics', 'technology',
+          'business', 'health', 'lifestyle'
+        ]
+        && data.description is string
+        && data.description.size() >= 5
+        && data.description.size() <= 100000
+        && data.imageUrl is string
+        && data.imageUrl.size() <= 2048
+        && (data.imageUrl == ''
+          || data.imageUrl.matches('https?://.*'))
+        && data.author is string
+        && data.author.size() > 0
+        && data.author.size() <= 100
+        && data.authorEmail is string
+        && data.createdAt is timestamp
+        && data.likes is list
+        && data.bookmarks is list
+        && data.comments is list
+        && (!data.keys().hasAny(['status']) || data.status == 'published')
+        && (!data.keys().hasAny(['updatedAt']) || data.updatedAt is timestamp)
+        && (!data.keys().hasAny(['updatedBy']) || data.updatedBy is string);
+    }
+
+    function validNewsCreate() {
+      return isAdmin()
+        && validNews(request.resource.data)
+        && request.resource.data.authorEmail == request.auth.token.email
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.likes.size() == 0
+        && request.resource.data.bookmarks.size() == 0
+        && request.resource.data.comments.size() == 0
+        && !request.resource.data.keys().hasAny(['updatedAt', 'updatedBy']);
+    }
+
+    function validNewsEdit() {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      return isAdmin()
+        && validNews(request.resource.data)
+        && changed.hasOnly([
+          'title', 'category', 'description', 'imageUrl', 'updatedAt', 'updatedBy'
+        ])
+        && request.resource.data.author == resource.data.author
+        && request.resource.data.authorEmail == resource.data.authorEmail
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.likes == resource.data.likes
+        && request.resource.data.bookmarks == resource.data.bookmarks
+        && request.resource.data.comments == resource.data.comments
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.updatedBy == request.auth.token.email;
+    }
+
+    function validOwnArrayChange(oldValues, newValues) {
+      return oldValues is list
+        && newValues is list
+        && newValues.size() == newValues.toSet().size()
+        && newValues.toSet().difference(oldValues.toSet())
+          .hasOnly([request.auth.token.email])
+        && oldValues.toSet().difference(newValues.toSet())
+          .hasOnly([request.auth.token.email]);
+    }
+
+    function validCommentAppend() {
+      let oldComments = resource.data.get('comments', []);
+      let newComments = request.resource.data.get('comments', []);
+      let addedComment = newComments[oldComments.size()];
+      return oldComments is list
+        && newComments is list
+        && newComments.size() == oldComments.size() + 1
+        && newComments.toSet().hasAll(oldComments.toSet())
+        && addedComment is map
+        && addedComment.keys().hasAll(['author', 'email', 'text', 'timestamp'])
+        && addedComment.keys().hasOnly(['author', 'email', 'text', 'timestamp'])
+        && addedComment.author is string
+        && addedComment.author.size() > 0
+        && addedComment.author.size() <= 100
+        && addedComment.email == request.auth.token.email
+        && addedComment.text is string
+        && addedComment.text.size() > 0
+        && addedComment.text.size() <= 3000
+        && addedComment.timestamp is int;
+    }
+
+    function validNewsInteraction() {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      return signedIn()
+        && changed.hasOnly(['likes', 'bookmarks', 'comments'])
+        && (!changed.hasAny(['likes'])
+          || validOwnArrayChange(
+            resource.data.get('likes', []),
+            request.resource.data.get('likes', [])
+          ))
+        && (!changed.hasAny(['bookmarks'])
+          || validOwnArrayChange(
+            resource.data.get('bookmarks', []),
+            request.resource.data.get('bookmarks', [])
+          ))
+        && (!changed.hasAny(['comments']) || validCommentAppend());
+    }
+
+    function validSelfRegistration(userId) {
+      return isSelf(userId)
+        && request.resource.data.keys().hasAll(['email', 'name', 'role', 'createdAt'])
+        && request.resource.data.keys().hasOnly(['email', 'name', 'role', 'createdAt'])
+        && request.resource.data.email == userId
+        && request.resource.data.name is string
+        && request.resource.data.name.size() <= 100
+        && request.resource.data.role == 'user'
+        && request.resource.data.createdAt == request.time;
+    }
+
+    function validManagedUserCreate(userId) {
+      return isSuperAdmin()
+        && request.resource.data.keys().hasAll([
+          'email', 'role', 'assignedBy', 'assignedAt'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'email', 'name', 'role', 'assignedBy', 'assignedAt'
+        ])
+        && request.resource.data.email == userId
+        && request.resource.data.role in ['user', 'admin', 'superadmin']
+        && request.resource.data.assignedBy == request.auth.token.email
+        && request.resource.data.assignedAt == request.time
+        && (!request.resource.data.keys().hasAny(['name'])
+          || (request.resource.data.name is string
+            && request.resource.data.name.size() <= 100));
+    }
+
+    function validManagedUserUpdate(userId) {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      return isSuperAdmin()
+        && changed.hasOnly(['name', 'role', 'assignedBy', 'assignedAt'])
+        && request.resource.data.email == userId
+        && request.resource.data.role in ['user', 'admin', 'superadmin']
+        && request.resource.data.assignedBy == request.auth.token.email
+        && request.resource.data.assignedAt == request.time
+        && (!request.resource.data.keys().hasAny(['name'])
+          || (request.resource.data.name is string
+            && request.resource.data.name.size() <= 100));
+    }
+
+    function validSelfUserUpdate(userId) {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      return isSelf(userId)
+        && changed.hasOnly(['name', 'photo', 'settings'])
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.role == resource.data.role
+        && (!changed.hasAny(['settings'])
+          || !request.resource.data.keys().hasAny(['settings']))
+        && (!request.resource.data.keys().hasAny(['name'])
+          || (request.resource.data.name is string
+            && request.resource.data.name.size() <= 100))
+        && (!request.resource.data.keys().hasAny(['photo'])
+          || (request.resource.data.photo is string
+            && request.resource.data.photo.size() <= 2048
+            && request.resource.data.photo.matches('https?://.*')));
+    }
+
+    function validPublicProfile(data, userId) {
+      return data.keys().hasAll(['email', 'name'])
+        && data.keys().hasOnly(['email', 'name', 'photo', 'createdAt'])
+        && data.email == userId
+        && data.name is string
+        && data.name.size() <= 100
+        && (!data.keys().hasAny(['photo'])
+          || (data.photo is string
+            && data.photo.size() <= 2048
+            && data.photo.matches('https?://.*')))
+        && (!data.keys().hasAny(['createdAt']) || data.createdAt is timestamp);
+    }
+
+    function validUserSettings(data) {
+      return data.keys().hasOnly([
+          'emailNotifications', 'pushNotifications', 'newsletter',
+          'darkMode', 'autoPlay', 'language', 'privacy'
+        ])
+        && (!data.keys().hasAny(['emailNotifications']) || data.emailNotifications is bool)
+        && (!data.keys().hasAny(['pushNotifications']) || data.pushNotifications is bool)
+        && (!data.keys().hasAny(['newsletter']) || data.newsletter is bool)
+        && (!data.keys().hasAny(['darkMode']) || data.darkMode is bool)
+        && (!data.keys().hasAny(['autoPlay']) || data.autoPlay is bool)
+        && (!data.keys().hasAny(['language'])
+          || data.language in ['en', 'es', 'fr', 'de', 'hi'])
+        && (!data.keys().hasAny(['privacy'])
+          || data.privacy in ['public', 'friends', 'private']);
+    }
+
+    function validFeedback(data) {
+      return data.keys().hasAll([
+          'name', 'email', 'category', 'subject', 'message',
+          'status', 'createdAt', 'userId'
+        ])
+        && data.keys().hasOnly([
+          'name', 'email', 'category', 'subject', 'message',
+          'status', 'createdAt', 'userId'
+        ])
+        && data.name is string
+        && data.name.size() > 0
+        && data.name.size() <= 100
+        && data.email is string
+        && data.email.size() <= 254
+        && data.category is string
+        && data.category.size() <= 100
+        && data.subject is string
+        && data.subject.size() > 0
+        && data.subject.size() <= 200
+        && data.message is string
+        && data.message.size() > 0
+        && data.message.size() <= 5000
+        && data.status == 'pending'
+        && data.createdAt == request.time
+        && ((signedIn() && data.userId == request.auth.token.email)
+          || (!signedIn() && data.userId == 'anonymous'));
+    }
+
+    match /news/{newsId} {
+      allow get, list: if true;
+      allow create: if validNewsCreate();
+      allow update: if validNewsEdit() || validNewsInteraction();
+      allow delete: if isAdmin();
+    }
+
+    match /users/{userId} {
+      allow get: if isSelf(userId) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if validSelfRegistration(userId) || validManagedUserCreate(userId);
+      allow update: if validSelfUserUpdate(userId) || validManagedUserUpdate(userId);
+      allow delete: if isSelf(userId) || isSuperAdmin();
+    }
+
+    match /publicProfiles/{userId} {
+      allow get: if exists(userPath(userId));
+      allow list: if false;
+      allow create: if isSelf(userId) && validPublicProfile(request.resource.data, userId);
+      allow update: if isSelf(userId)
+        && validPublicProfile(request.resource.data, userId)
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.get('createdAt', null)
+          == resource.data.get('createdAt', null)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'photo']);
+      allow delete: if isSelf(userId) || isSuperAdmin();
+    }
+
+    match /userSettings/{userId} {
+      allow get: if isSelf(userId);
+      allow list: if false;
+      allow create, update: if isSelf(userId)
+        && validUserSettings(request.resource.data);
+      allow delete: if isSelf(userId) || isSuperAdmin();
+    }
+
+    match /feedback/{feedbackId} {
+      allow create: if validFeedback(request.resource.data);
+      allow get, list: if isAdmin();
+      allow update, delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
